@@ -7,7 +7,10 @@ import (
 )
 
 func Init(ip string, port int, quiet bool, debug bool, serverDebug bool) {
-	go game.StartGame(ip, port, quiet, serverDebug)
+	done := make(chan string)
+	go game.StartGame(ip, port, quiet, serverDebug, done)
+	<-done // make sure the server is setup, then register with it
+	utils.RegisterClient(ip, port, debug)
 	utils.Loop = utils.LoopFuncs{pollEvents, update, draw}
 }
 
