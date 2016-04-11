@@ -5,7 +5,11 @@ import (
 	"github.com/gragas/jabberwock-client/utils"
 )
 
-func PollEvents() {
+func Init(ip string, port int, quiet bool, debug bool, serverDebug bool) {
+	utils.Loop = utils.LoopFuncs{pollEvents, update, draw}
+}
+
+func pollEvents() {
 	for {
 		if event := sdl.PollEvent(); event != nil {
 			switch event.(type) {
@@ -18,10 +22,10 @@ func PollEvents() {
 	}
 }
 
-func Update() {
-
+func update() {
+	
 }
 
-func Draw() {
-
+func draw() {
+	
 }

@@ -4,7 +4,7 @@ import (
 	"github.com/gragas/go-sdl2/sdl"	
 )
 
-var Delta uint32
+var Delta int64
 var Running bool
 var Window *sdl.Window
 var Surface *sdl.Surface

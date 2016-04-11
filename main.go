@@ -7,28 +7,39 @@ import (
 	"github.com/gragas/jabberwock-client/debug"
 	"github.com/gragas/jabberwock-client/mainMenu"
 	"github.com/gragas/jabberwock-client/utils"
+	"time"
 )
 
-var windowTitle string
-var windowWidth, windowHeight int
-var debugMode bool
+const (
+	wString = "specifies the window width"
+	hString = "specifies the window height"
+	titleString = "specifies the window title"
+	quietString = "specifies whether to be quiet"
+	debugString = "specifies whether debug mode is enabled"
+	serverDebugString = "specifies whether server debug mode is enabled"
+	ipString    = "specifies the IP address this jabberwock server will bind to"
+	portString  = "specifies the port this jabberwock server will bind to"
+)
+
+var ip, windowTitle string
+var windowWidth, windowHeight, port int
+var debugMode, quietMode, serverDebugMode bool
 
 func main() {
 	parseFlags()
 	utils.Window, utils.Surface = initialize()
 	defer utils.Window.Destroy()
 
-	ticks := uint32(0)
-
+	ticks := time.Now()
 	for utils.Running {
 		utils.Loop.PollEvents()
 		utils.Loop.Update()
 		utils.Loop.Draw()
-
-		utils.Delta = sdl.GetTicks() - ticks
-		ticks = sdl.GetTicks()
+		
+		utils.Delta = time.Now().Sub(ticks).Nanoseconds()
+		ticks = time.Now()
 		if utils.Delta < consts.TicksPerFrame {
-			sdl.Delay(consts.TicksPerFrame - utils.Delta)
+			time.Sleep(time.Duration(consts.TicksPerFrame - utils.Delta))
 		}
 		utils.Window.UpdateSurface()
 	}
@@ -36,10 +47,14 @@ func main() {
 }
 
 func parseFlags() {
-	flag.IntVar(&windowWidth, "w", 800, "specifies the window width")
-	flag.IntVar(&windowHeight, "h", 600, "specifies the window height")
-	flag.StringVar(&windowTitle, "t", "jabberwock", "specifies the window title")
-	flag.BoolVar(&debugMode, "d", true, "specifies whether debug mode is enabled")
+	flag.IntVar(&windowWidth, "w", 800, wString)
+	flag.IntVar(&windowHeight, "h", 600, hString)
+	flag.StringVar(&windowTitle, "title", "Beware the Jabberwock!", titleString)
+	flag.BoolVar(&quietMode, "quiet", true, quietString)
+	flag.BoolVar(&debugMode, "debug", false, debugString)
+	flag.BoolVar(&serverDebugMode, "sdebug", false, serverDebugString)
+	flag.StringVar(&ip, "ip", "127.0.0.1", ipString)
+	flag.IntVar(&port, "port", 5000, portString)
 	flag.Parse()
 }
 
@@ -58,15 +73,9 @@ func initialize() (*sdl.Window, *sdl.Surface) {
 
 	utils.Running = true
 	if debugMode {
-		utils.Loop = utils.LoopFuncs{
-			debug.PollEvents,
-			debug.Update,
-			debug.Draw}
+		debug.Init(ip, port, quietMode, debugMode, serverDebugMode)
 	} else {
-		utils.Loop = utils.LoopFuncs{
-			mainMenu.PollEvents,
-			mainMenu.Update,
-			mainMenu.Draw}
+		mainMenu.Init(ip, port, quietMode, debugMode, serverDebugMode)
 	}
 
 	return window, surface
