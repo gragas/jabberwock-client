@@ -50,7 +50,7 @@ func parseFlags() {
 	flag.IntVar(&windowWidth, "w", 800, wString)
 	flag.IntVar(&windowHeight, "h", 600, hString)
 	flag.StringVar(&windowTitle, "title", "Beware the Jabberwock!", titleString)
-	flag.BoolVar(&quietMode, "quiet", true, quietString)
+	flag.BoolVar(&quietMode, "quiet", false, quietString)
 	flag.BoolVar(&debugMode, "debug", false, debugString)
 	flag.BoolVar(&serverDebugMode, "sdebug", false, serverDebugString)
 	flag.StringVar(&ip, "ip", "127.0.0.1", ipString)
