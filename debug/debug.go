@@ -5,22 +5,25 @@ import (
 	"github.com/gragas/go-sdl2/sdl"	
 	"github.com/gragas/jabberwock-client/utils"
 	"github.com/gragas/jabberwock-server/game"
+	"net"
 )
+
+var conn net.Conn
 
 func Init(ip string, port int, quiet bool, debug bool, serverDebug bool) {
 	done := make(chan string)
 	go game.StartGame(ip, port, quiet, serverDebug, done)
-	<-done // make sure the server is setup, then register with it
+	<-done
 	var registered bool
 	var attempts int
 	for ; attempts < 5; attempts++ {
-		registered = utils.RegisterClient(ip, port, debug)
+		conn, registered = utils.RegisterClient(ip, port, debug)
 		if registered {
 			break
 		}
 	}
 	if !registered {
-		fmt.Printf("Could not register client after %v attempts.\n", attempts)
+		fmt.Printf("CLIENT: Failed to register after %v attempts.\n", attempts)
 	}
 	utils.Loop = utils.LoopFuncs{pollEvents, update, draw}
 }
@@ -31,6 +34,12 @@ func pollEvents() {
 			switch event.(type) {
 			case *sdl.QuitEvent:
 				utils.Running = false
+				err := conn.Close()
+				if err != nil {
+					fmt.Printf("CLIENT: Failed to close connection.\n")
+				} else {
+					fmt.Printf("CLIENT: Successfully closed connection.\n")
+				}
 			}
 		} else {
 			break
@@ -39,9 +48,9 @@ func pollEvents() {
 }
 
 func update() {
-
+	
 }
 
 func draw() {
-
+	
 }

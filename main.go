@@ -63,13 +63,9 @@ func initialize() (*sdl.Window, *sdl.Surface) {
 	window, err := sdl.CreateWindow(windowTitle,
 		sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
 		windowWidth, windowHeight, sdl.WINDOW_SHOWN)
-	if err != nil {
-		panic(err)
-	}
+	if err != nil { panic(err) }
 	surface, err := window.GetSurface()
-	if err != nil {
-		panic(err)
-	}
+	if err != nil { panic(err) }
 
 	utils.Running = true
 	if debugMode {

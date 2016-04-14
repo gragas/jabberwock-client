@@ -20,15 +20,15 @@ type LoopFuncs struct {
 	Draw func()
 }
 
-func RegisterClient(ip string, port int, debug bool) bool {
+func RegisterClient(ip string, port int, debug bool) (net.Conn, bool) {
 	if debug {
-		fmt.Printf("Registering client with server at \033[0;31m")
+		fmt.Printf("CLIENT: Registering with server at \033[0;31m")
 		fmt.Printf("%v\033[0m:\033[0;34m%v\033[0m\n", ip, port)
 	}
 	
-	registrationFailure := func(address string) bool {
-		fmt.Printf("Could not register client with servar at %s!\n", address)
-		return false
+	registrationFailure := func(address string) (net.Conn, bool) {
+		fmt.Printf("CLIENT: Could not register with server at %s!\n", address)
+		return nil, false
 	}
 
 	address := ip + ":" + strconv.Itoa(port)
@@ -44,7 +44,7 @@ func RegisterClient(ip string, port int, debug bool) bool {
 	if debug {
 		fmt.Printf("CLIENT: Successfully registered client with server at %s\n",
 			address)
-		fmt.Printf("Response from server was %v\n", status[:8])
+		fmt.Printf("CLIENT: Response from server was %v\n", status[:8])
 	}
-	return true
+	return conn, true
 }
