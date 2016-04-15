@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/gragas/go-sdl2/sdl"	
+	"github.com/gragas/jabberwock-lib/protocol"
 	"net"
 	"strconv"
 )
@@ -36,15 +37,16 @@ func RegisterClient(ip string, port int, debug bool) (net.Conn, bool) {
 	if err != nil {
 		return registrationFailure(address)
 	}
-	fmt.Fprintf(conn, "REGISTER\n")
+	fmt.Fprintf(conn, string(protocol.Register) + "\n")
 	status, err := bufio.NewReader(conn).ReadString('\n')
-	if err != nil {
+	if err != nil || protocol.Code(status[0]) != protocol.Success || len(status) < 2 {
 		return registrationFailure(address)
 	}
 	if debug {
 		fmt.Printf("CLIENT: Successfully registered client with server at %s\n",
 			address)
-		fmt.Printf("CLIENT: Response from server was %v\n", status[:8])
+		fmt.Printf("CLIENT: Response from server was '%v'\n",
+			protocol.Code(status[0]).String() + status[1:len(status)-1])
 	}
 	return conn, true
 }
