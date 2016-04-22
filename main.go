@@ -33,8 +33,7 @@ func main() {
 	ticks := time.Now()
 	for utils.Running {
 		utils.Loop.PollEvents()
-		utils.Loop.Update()
-		utils.Loop.Draw()
+		utils.Loop.Draw(utils.Surface)
 		
 		utils.Delta = time.Now().Sub(ticks).Nanoseconds()
 		ticks = time.Now()
@@ -68,11 +67,13 @@ func initialize() (*sdl.Window, *sdl.Surface) {
 	if err != nil { panic(err) }
 
 	utils.Running = true
+	initialized := make(chan bool)
 	if debugMode {
-		debug.Init(ip, port, quietMode, debugMode, serverDebugMode)
+		go debug.Init(ip, port, initialized, quietMode, debugMode, serverDebugMode)
 	} else {
-		mainMenu.Init(ip, port, quietMode, debugMode, serverDebugMode)
+		go mainMenu.Init(ip, port, initialized, quietMode, debugMode, serverDebugMode)
 	}
+	<- initialized
 
 	return window, surface
 }
