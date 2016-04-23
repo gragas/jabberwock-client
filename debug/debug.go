@@ -19,33 +19,41 @@ var reader *bufio.Reader
 var receiverToHandler chan string
 var clientPlayer *player.Player
 var clientPlayerView *player.PlayerView
-var entities []entity.Entity
-var players []*player.Player
+var entities map[uint64]entity.Entity
+var players map[uint64]*player.Player
+var playerViews map[uint64]*player.PlayerView
 
 func Init(ip string, port int, initialized chan bool, quiet bool, debug bool, serverDebug bool) {
+	/* initialize "global" variables */
+	entities = make(map[uint64]entity.Entity)
+	players = make(map[uint64]*player.Player)
+	playerViews = make(map[uint64]*player.PlayerView)
+	/*********************************/
+
+	/* start up a server in the background */
 	done := make(chan bool)
 	go game.StartGame(ip, port, quiet, serverDebug, done)
 	<-done
+	/***************************************/
+
+	/* register with the server */
 	sendPlayer := player.NewDefaultPlayer()
 	var registered bool
-	var attempts int
-	for ; attempts < 5; attempts++ {
-		conn, reader, clientPlayer, registered = utils.RegisterClient(ip, port, sendPlayer, debug)
-		if registered {
-			players = append(players, clientPlayer)
-			entities = append(entities, clientPlayer)
-			break
-		}
-	}
-	if !registered {
-		fmt.Printf("CLIENT: Failed to register after %v attempts.\n", attempts)
+	conn, reader, clientPlayer, registered = utils.RegisterClient(ip, port, sendPlayer, debug)
+	if registered {
+		players[clientPlayer.GetID()] = clientPlayer
+		entities[clientPlayer.GetID()] = clientPlayer
+	} else {
 		panic(errors.New("ERROR: Client failed to register with server.\n"))
 	}
+	/****************************/
+
+	/* setup a player view */
 	surf, rect := entity.NewDefaultEntityView(clientPlayer)
 	clientPlayerView = &player.PlayerView{PlayerPtr: clientPlayer, Surface: surf, Rect: rect}
-	if debug {
-		fmt.Printf("CLIENT: Client player is %v\n", entity.ShortString(clientPlayer))
-	}
+	playerViews[clientPlayer.GetID()] = clientPlayerView
+	/***********************/
+
 	utils.Loop = utils.LoopFuncs{pollEvents, draw}
 	initialized <- true
 	receiver(debug)
@@ -142,13 +150,15 @@ func update(msg string, debug bool) {
 	case protocol.UpdatePlayers:
 		err := json.Unmarshal([]byte(msg[1:]), &players)
 		if err != nil {
-			panic(err)
+			fmt.Printf("CLIENT: Received invalid msg with UpdatePlayers code: %v\n", msg)
+			return
 		}
-		for _, p := range players {
-			if clientPlayer.GetID() == p.GetID() {
-					clientPlayer = p
-			}
+		if players[clientPlayer.GetID()] != nil {
+			clientPlayer = players[clientPlayer.GetID()]
 		}
+		surf, rect := entity.NewDefaultEntityView(clientPlayer)
+		clientPlayerView.Surface = surf
+		clientPlayerView.Rect = rect
 	default:
 		fmt.Printf("CLIENT: Invalid protocol.Code.\ncode: %v\nmsg: %v\n", protocol.Code(msg[0]), msg)
 	}
@@ -156,7 +166,7 @@ func update(msg string, debug bool) {
 
 func draw(dest *sdl.Surface) {
 	utils.Surface.FillRect(nil, sdl.MapRGBA(utils.Surface.Format, 0xFF, 0xEE, 0xCC, 0xFF))
-	if clientPlayerView != nil {
-		clientPlayerView.Draw(dest)
+	for _, pv := range playerViews {
+		pv.Draw(dest)
 	}
 }

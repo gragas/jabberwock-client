@@ -27,41 +27,47 @@ func RegisterClient(ip string, port int, sendPlayer *player.Player, debug bool) 
 		fmt.Printf("%v\033[0m:\033[0;34m%v\033[0m\n", ip, port)
 	}
 
-	registrationFailure := func(address string, malformed bool) {
-		fmt.Printf("CLIENT: Could not register with server at %s!\n", address)
-		if malformed {
-			fmt.Printf("CLIENT: Additional info: received malformed response.\n")
-		}
-	}
-
+	/* dial the server */
 	address := ip + ":" + strconv.Itoa(port)
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
-		registrationFailure(address, false)
+		fmt.Printf("CLIENT ERROR: %v\n")
 		return nil, nil, nil, false
 	}
-	sendstr := string(protocol.Register)
-	sendstr += sendPlayer.String() + string(protocol.EndOfMessage)
-	fmt.Fprintf(conn, sendstr)
+	/*******************/
+
+	/* send it a registration message */
+	fmt.Fprintf(conn, string(protocol.Register) + sendPlayer.String() + string(protocol.EndOfMessage))
+	/************************************/
+
+	/* get the new player back */
 	reader := bufio.NewReader(conn)
-	status, err := reader.ReadString(byte(protocol.EndOfMessage))
-	if err != nil || protocol.Code(status[0]) != protocol.Success {
-		registrationFailure(address, false)
+	msg, err := reader.ReadString(byte(protocol.EndOfMessage))
+	if err != nil {
+		fmt.Printf("CLIENT ERROR: %v\n", err)
 		return nil, nil, nil, false
 	}
-	if len(status) < 2 {
-		registrationFailure(address, true)
+	if len(msg) < 2 {
+		fmt.Printf("CLIENT: Registration response was too short: %v\n", msg)
 		return nil, nil, nil, false
 	}
-	if debug {
-		fmt.Printf("CLIENT: Successfully registered client with server at %s\n", address)
-		fmt.Printf("CLIENT: Response from server was '%v'\n",
-			protocol.Code(status[0]).String()+status[1:len(status)-1])
+	if protocol.Code(msg[0]) != protocol.Success {
+		fmt.Printf("CLIENT: Recieved invalid registration response: %v\n", msg)
+		return nil, nil, nil, false
 	}
-	var recvPlayer player.Player
-	err = recvPlayer.FromBytes([]byte(status[1 : len(status)-1]))
+	contents := msg[1:len(msg)-1]
+	recvPlayer := new(player.Player)
+	err = recvPlayer.FromBytes([]byte(contents))
 	if err != nil {
 		panic(err)
 	}
-	return conn, reader, &recvPlayer, true
+	/***************************/
+
+	/* handshake with the server */
+	fmt.Fprintf(conn, string(protocol.Handshake) + string(protocol.EndOfMessage))
+	/*****************************/
+	if debug {
+		fmt.Printf("CLIENT: Successfully registered client with server at %s\n", address)
+	}
+	return conn, reader, recvPlayer, true
 }
