@@ -82,19 +82,19 @@ func pollEvents() {
 					quit()
 				case sdl.K_w:
 					if clientPlayer != nil {
-						entity.MoveNet(clientPlayer, conn, protocol.EntityStartMoveUp)
+						entity.MoveNet(clientPlayer, conn, true, entity.Up)
 					}
 				case sdl.K_s:
 					if clientPlayer != nil {
-						entity.MoveNet(clientPlayer, conn, protocol.EntityStartMoveDown)
+						entity.MoveNet(clientPlayer, conn, true, entity.Down)
 					}
 				case sdl.K_d:
 					if clientPlayer != nil {
-						entity.MoveNet(clientPlayer, conn, protocol.EntityStartMoveRight)
+						entity.MoveNet(clientPlayer, conn, true, entity.Right)
 					}
 				case sdl.K_a:
 					if clientPlayer != nil {
-						entity.MoveNet(clientPlayer, conn, protocol.EntityStartMoveLeft)
+						entity.MoveNet(clientPlayer, conn, true, entity.Left)
 					}
 				default:
 					fmt.Println("CLIENT: Key down:", sym)
@@ -104,19 +104,19 @@ func pollEvents() {
 				switch sym {
 				case sdl.K_w:
 					if clientPlayer != nil {
-						entity.MoveNet(clientPlayer, conn, protocol.EntityStopMoveUp)
+						entity.MoveNet(clientPlayer, conn, false, entity.Up)
 					}
 				case sdl.K_s:
 					if clientPlayer != nil {
-						entity.MoveNet(clientPlayer, conn, protocol.EntityStopMoveDown)
+						entity.MoveNet(clientPlayer, conn, false, entity.Down)
 					}
 				case sdl.K_d:
 					if clientPlayer != nil {
-						entity.MoveNet(clientPlayer, conn, protocol.EntityStopMoveRight)
+						entity.MoveNet(clientPlayer, conn, false, entity.Right)
 					}
 				case sdl.K_a:
 					if clientPlayer != nil {
-						entity.MoveNet(clientPlayer, conn, protocol.EntityStopMoveLeft)
+						entity.MoveNet(clientPlayer, conn, false, entity.Left)
 					}
 				default:
 					fmt.Println("CLIENT: Key up:", sym)
@@ -148,17 +148,18 @@ func receiver(debug bool) {
 func update(msg string, debug bool) {
 	switch protocol.Code(msg[0]) {
 	case protocol.UpdatePlayers:
-		err := json.Unmarshal([]byte(msg[1:]), &players)
+//		err := json.Unmarshal([]byte(msg[1:]), &players)
+//		if err != nil {
+//			fmt.Printf("CLIENT: Received invalid msg with UpdatePlayers code: %v\n", msg)
+//			return
+//		}
+//		if players[clientPlayer.GetID()] != nil {
+//			clientPlayer = players[clientPlayer.GetID()]
+//		}
+		err := json.Unmarshal([]byte(msg[1:]), clientPlayer)
 		if err != nil {
-			fmt.Printf("CLIENT: Received invalid msg with UpdatePlayers code: %v\n", msg)
-			return
+			panic(err)
 		}
-		if players[clientPlayer.GetID()] != nil {
-			clientPlayer = players[clientPlayer.GetID()]
-		}
-		surf, rect := entity.NewDefaultEntityView(clientPlayer)
-		clientPlayerView.Surface = surf
-		clientPlayerView.Rect = rect
 	default:
 		fmt.Printf("CLIENT: Invalid protocol.Code.\ncode: %v\nmsg: %v\n", protocol.Code(msg[0]), msg)
 	}
