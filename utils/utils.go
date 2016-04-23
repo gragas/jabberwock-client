@@ -31,7 +31,7 @@ func RegisterClient(ip string, port int, sendPlayer *player.Player, debug bool) 
 	address := ip + ":" + strconv.Itoa(port)
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
-		fmt.Printf("CLIENT ERROR: %v\n")
+		fmt.Printf("CLIENT ERROR: %v\n", err)
 		return nil, nil, nil, false
 	}
 	/*******************/

@@ -10,8 +10,9 @@ import (
 	"github.com/gragas/jabberwock-lib/entity"
 	"github.com/gragas/jabberwock-lib/player"
 	"github.com/gragas/jabberwock-lib/protocol"
-	"github.com/gragas/jabberwock-server/game"
+//	"github.com/gragas/jabberwock-server/game"
 	"net"
+	"strconv"
 )
 
 var conn net.Conn
@@ -21,19 +22,21 @@ var clientPlayer *player.Player
 var clientPlayerView *player.PlayerView
 var entities map[uint64]entity.Entity
 var players map[uint64]*player.Player
+var jsonPlayers map[string]*player.Player // same as players, but json keys must be strings
 var playerViews map[uint64]*player.PlayerView
 
 func Init(ip string, port int, initialized chan bool, quiet bool, debug bool, serverDebug bool) {
 	/* initialize "global" variables */
 	entities = make(map[uint64]entity.Entity)
 	players = make(map[uint64]*player.Player)
+	jsonPlayers = make(map[string]*player.Player)
 	playerViews = make(map[uint64]*player.PlayerView)
 	/*********************************/
 
 	/* start up a server in the background */
-	done := make(chan bool)
-	go game.StartGame(ip, port, quiet, serverDebug, done)
-	<-done
+	// done := make(chan bool)
+	// go game.StartGame(ip, port, quiet, serverDebug, false, done)
+	// <-done
 	/***************************************/
 
 	/* register with the server */
@@ -42,6 +45,7 @@ func Init(ip string, port int, initialized chan bool, quiet bool, debug bool, se
 	conn, reader, clientPlayer, registered = utils.RegisterClient(ip, port, sendPlayer, debug)
 	if registered {
 		players[clientPlayer.GetID()] = clientPlayer
+		jsonPlayers[strconv.FormatUint(clientPlayer.GetID(), 10)] = clientPlayer
 		entities[clientPlayer.GetID()] = clientPlayer
 	} else {
 		panic(errors.New("ERROR: Client failed to register with server.\n"))
@@ -148,17 +152,30 @@ func receiver(debug bool) {
 func update(msg string, debug bool) {
 	switch protocol.Code(msg[0]) {
 	case protocol.UpdatePlayers:
-//		err := json.Unmarshal([]byte(msg[1:]), &players)
-//		if err != nil {
-//			fmt.Printf("CLIENT: Received invalid msg with UpdatePlayers code: %v\n", msg)
-//			return
-//		}
-//		if players[clientPlayer.GetID()] != nil {
-//			clientPlayer = players[clientPlayer.GetID()]
-//		}
-		err := json.Unmarshal([]byte(msg[1:]), clientPlayer)
+		err := json.Unmarshal([]byte(msg[1:]), &jsonPlayers)
 		if err != nil {
-			panic(err)
+			fmt.Printf("CLIENT: Received invalid msg with UpdatePlayers code: %v\n", msg)
+			return
+		}
+		// now update players to reflect the new jsonPlayers
+		for strkey, v := range jsonPlayers {
+			k, err := strconv.ParseUint(strkey, 10, 64)
+			if err != nil {
+				panic(err)
+			}
+			players[k] = v
+			if playerViews[k] == nil {
+				surf, rect := entity.NewDefaultEntityView(v)
+				pv := &player.PlayerView{PlayerPtr: v, Surface: surf, Rect: rect}
+				playerViews[k] = pv
+			} else {
+				playerViews[k].PlayerPtr = v
+			}
+			entities[k] = v
+		}
+		// make sure the client player is pointing in the right direction
+		if players[clientPlayer.GetID()] != nil {
+			clientPlayer = players[clientPlayer.GetID()]
 		}
 	default:
 		fmt.Printf("CLIENT: Invalid protocol.Code.\ncode: %v\nmsg: %v\n", protocol.Code(msg[0]), msg)
