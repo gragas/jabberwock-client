@@ -12,6 +12,7 @@ import (
 	"github.com/gragas/jabberwock-lib/protocol"
 //	"github.com/gragas/jabberwock-server/game"
 	"net"
+	"os"
 	"strconv"
 	"time"
 )
@@ -71,6 +72,9 @@ func quit() {
 	} else {
 		fmt.Printf("CLIENT: Successfully closed connection with %v.\n", conn.RemoteAddr())
 	}
+	cleanupRenderer()
+	sdl.Quit()
+	os.Exit(0)
 }
 
 func pollEvents() {
@@ -188,4 +192,11 @@ func draw(dest *sdl.Surface) {
 	for _, pv := range playerViews {
 		pv.Draw(utils.Renderer, dest, time.Duration(utils.Delta))
 	}
+}
+
+func cleanupRenderer() {
+	for _, pv := range playerViews {
+		pv.GetTexture().Destroy()
+	}
+	utils.Renderer.Destroy()
 }
