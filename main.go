@@ -27,7 +27,7 @@ var debugMode, quietMode, serverDebugMode bool
 
 func main() {
 	parseFlags()
-	utils.Window, utils.Surface = initialize()
+	initialize()
 	defer utils.Window.Destroy()
 
 	ticks := time.Now()
@@ -40,7 +40,8 @@ func main() {
 		if utils.Delta < consts.TicksPerFrame {
 			time.Sleep(time.Duration(consts.TicksPerFrame - utils.Delta))
 		}
-		utils.Window.UpdateSurface()
+//		utils.Window.UpdateSurface()
+		utils.Renderer.Present()
 	}
 	sdl.Quit()
 }
@@ -57,7 +58,7 @@ func parseFlags() {
 	flag.Parse()
 }
 
-func initialize() (*sdl.Window, *sdl.Surface) {
+func initialize() {
 	sdl.Init(sdl.INIT_EVERYTHING)
 	window, err := sdl.CreateWindow(windowTitle,
 		sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
@@ -65,6 +66,16 @@ func initialize() (*sdl.Window, *sdl.Surface) {
 	if err != nil { panic(err) }
 	surface, err := window.GetSurface()
 	if err != nil { panic(err) }
+	err = surface.SetBlendMode(sdl.BLENDMODE_BLEND)
+	if err != nil { panic(err) }
+	// renderer
+	renderer, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED | sdl.RENDERER_TARGETTEXTURE)
+	if err != nil { panic(err) }
+	err = renderer.SetRenderTarget(nil)
+	if err != nil { panic(err) }
+	err = renderer.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
+	if err != nil { panic(err) }	
+	utils.Window, utils.Surface, utils.Renderer = window, surface, renderer	
 
 	utils.Running = true
 	initialized := make(chan bool)
@@ -74,6 +85,4 @@ func initialize() (*sdl.Window, *sdl.Surface) {
 		go mainMenu.Init(ip, port, initialized, quietMode, debugMode, serverDebugMode)
 	}
 	<- initialized
-
-	return window, surface
 }

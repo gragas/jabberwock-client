@@ -14,6 +14,7 @@ var Delta int64
 var Running bool
 var Window *sdl.Window
 var Surface *sdl.Surface
+var Renderer *sdl.Renderer
 var Loop LoopFuncs
 
 type LoopFuncs struct {

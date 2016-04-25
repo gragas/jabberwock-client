@@ -13,6 +13,7 @@ import (
 //	"github.com/gragas/jabberwock-server/game"
 	"net"
 	"strconv"
+	"time"
 )
 
 var conn net.Conn
@@ -53,8 +54,7 @@ func Init(ip string, port int, initialized chan bool, quiet bool, debug bool, se
 	/****************************/
 
 	/* setup a player view */
-	surf, rect := entity.NewDefaultEntityView(clientPlayer)
-	clientPlayerView = &player.PlayerView{PlayerPtr: clientPlayer, Surface: surf, Rect: rect}
+	clientPlayerView = clientPlayer.NewDefaultPlayerView(utils.Renderer)
 	playerViews[clientPlayer.GetID()] = clientPlayerView
 	/***********************/
 
@@ -165,9 +165,7 @@ func update(msg string, debug bool) {
 			}
 			players[k] = v
 			if playerViews[k] == nil {
-				surf, rect := entity.NewDefaultEntityView(v)
-				pv := &player.PlayerView{PlayerPtr: v, Surface: surf, Rect: rect}
-				playerViews[k] = pv
+				playerViews[k] = v.NewDefaultPlayerView(utils.Renderer)
 			} else {
 				playerViews[k].PlayerPtr = v
 			}
@@ -183,8 +181,11 @@ func update(msg string, debug bool) {
 }
 
 func draw(dest *sdl.Surface) {
-	utils.Surface.FillRect(nil, sdl.MapRGBA(utils.Surface.Format, 0xFF, 0xEE, 0xCC, 0xFF))
+	err := utils.Renderer.SetRenderTarget(nil); if err != nil { panic(err) }
+	err = utils.Renderer.SetDrawBlendMode(sdl.BLENDMODE_BLEND); if err != nil { panic(err) }
+	err = utils.Renderer.SetDrawColor(0xFF, 0xFF, 0xFF, 0xFF)
+	utils.Renderer.Clear()
 	for _, pv := range playerViews {
-		pv.Draw(dest)
+		pv.Draw(utils.Renderer, dest, time.Duration(utils.Delta))
 	}
 }
