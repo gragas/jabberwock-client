@@ -27,6 +27,9 @@ var players map[uint64]*player.Player
 var jsonPlayers map[string]*player.Player // same as players, but json keys must be strings
 var playerViews map[uint64]*player.PlayerView
 
+var flag [2]bool
+var turn int
+
 func Init(ip string, port int, initialized chan bool, quiet bool, debug bool, serverDebug bool) {
 	/* initialize "global" variables */
 	entities = make(map[uint64]entity.Entity)
@@ -154,6 +157,11 @@ func receiver(debug bool) {
 }
 
 func update(msg string, debug bool) {
+	// Peterson's Solution
+	flag[0] = true
+	turn = 1
+	for flag[1] && turn == 1 {}
+	
 	switch protocol.Code(msg[0]) {
 	case protocol.UpdatePlayers:
 		err := json.Unmarshal([]byte(msg[1:]), &jsonPlayers)
@@ -182,9 +190,16 @@ func update(msg string, debug bool) {
 	default:
 		fmt.Printf("CLIENT: Invalid protocol.Code.\ncode: %v\nmsg: %v\n", protocol.Code(msg[0]), msg)
 	}
+
+	flag[0] = false
 }
 
 func draw(dest *sdl.Surface) {
+	// Peterson's Solution
+	flag[1] = true
+	turn = 0
+	for flag[0] && turn == 0 {}
+
 	err := utils.Renderer.SetRenderTarget(nil); if err != nil { panic(err) }
 	err = utils.Renderer.SetDrawBlendMode(sdl.BLENDMODE_BLEND); if err != nil { panic(err) }
 	err = utils.Renderer.SetDrawColor(0xFF, 0xFF, 0xFF, 0xFF)
@@ -192,6 +207,8 @@ func draw(dest *sdl.Surface) {
 	for _, pv := range playerViews {
 		pv.Draw(utils.Renderer, dest, time.Duration(utils.Delta))
 	}
+
+	flag[1] = false
 }
 
 func cleanupRenderer() {
