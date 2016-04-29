@@ -62,6 +62,7 @@ func RegisterClient(ip string, port int, sendPlayer *player.Player, debug bool) 
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("Received player with ID", recvPlayer.GetID())
 	/***************************/
 
 	/* handshake with the server */

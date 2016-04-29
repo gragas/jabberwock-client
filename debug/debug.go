@@ -10,7 +10,7 @@ import (
 	"github.com/gragas/jabberwock-lib/entity"
 	"github.com/gragas/jabberwock-lib/player"
 	"github.com/gragas/jabberwock-lib/protocol"
-//	"github.com/gragas/jabberwock-server/game"
+	"github.com/gragas/jabberwock-lib/textures"
 	"net"
 	"os"
 	"strconv"
@@ -24,13 +24,16 @@ var clientPlayer *player.Player
 var clientPlayerView *player.PlayerView
 var entities map[uint64]entity.Entity
 var players map[uint64]*player.Player
-var jsonPlayers map[string]*player.Player // same as players, but json keys must be strings
+var jsonPlayers map[string]*player.Player // marshalled players
 var playerViews map[uint64]*player.PlayerView
 
 var flag [2]bool
 var turn int
 
 func Init(ip string, port int, initialized chan bool, quiet bool, debug bool, serverDebug bool) {
+	/* initialize the textures cache */
+	textures.Init()
+
 	/* initialize "global" variables */
 	entities = make(map[uint64]entity.Entity)
 	players = make(map[uint64]*player.Player)
@@ -177,11 +180,11 @@ func update(msg string, debug bool) {
 			}
 			players[k] = v
 			if playerViews[k] == nil {
-				playerViews[k] = v.NewDefaultPlayerView(utils.Renderer)
+				playerViews[k] = players[k].NewDefaultPlayerView(utils.Renderer)
 			} else {
-				playerViews[k].PlayerPtr = v
+				playerViews[k].PlayerPtr = players[k]
 			}
-			entities[k] = v
+			entities[k] = players[k]
 		}
 		// make sure the client player is pointing in the right direction
 		if players[clientPlayer.GetID()] != nil {
@@ -213,7 +216,7 @@ func draw(dest *sdl.Surface) {
 
 func cleanupRenderer() {
 	for _, pv := range playerViews {
-		pv.GetTexture().Destroy()
+		pv.Texture.Destroy()
 	}
 	utils.Renderer.Destroy()
 }
