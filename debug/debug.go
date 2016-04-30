@@ -190,6 +190,16 @@ func update(msg string, debug bool) {
 		if players[clientPlayer.GetID()] != nil {
 			clientPlayer = players[clientPlayer.GetID()]
 		}
+	case protocol.Disconnect:
+		id, err := strconv.ParseUint(msg[1:], 10, 64)
+		if err != nil {
+			fmt.Printf("CLIENT: Could not parse entity ID of disconnected client.\n")
+		} else {
+			delete(players, id)
+			delete(playerViews, id)
+			delete(jsonPlayers ,strconv.FormatUint(id, 10))
+			delete(entities, id)
+		}
 	default:
 		fmt.Printf("CLIENT: Invalid protocol.Code.\ncode: %v\nmsg: %v\n", protocol.Code(msg[0]), msg)
 	}
