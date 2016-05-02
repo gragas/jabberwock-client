@@ -58,6 +58,6 @@ func handleMessage(debug bool) {
 	}
 }
 
-func draw(dest *sdl.Surface) {
+func draw() {
 	
 }

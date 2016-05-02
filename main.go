@@ -33,14 +33,13 @@ func main() {
 	ticks := time.Now()
 	for utils.Running {
 		utils.Loop.PollEvents()
-		utils.Loop.Draw(utils.Surface)
+		utils.Loop.Draw()
 		
 		utils.Delta = time.Now().Sub(ticks).Nanoseconds()
 		ticks = time.Now()
 		if utils.Delta < consts.TicksPerFrame {
 			time.Sleep(time.Duration(consts.TicksPerFrame - utils.Delta))
 		}
-//		utils.Window.UpdateSurface()
 		utils.Renderer.Present()
 	}
 	sdl.Quit()

@@ -19,7 +19,7 @@ var Loop LoopFuncs
 
 type LoopFuncs struct {
 	PollEvents    func()
-	Draw          func(dest *sdl.Surface)
+	Draw          func()
 }
 
 func RegisterClient(ip string, port int, sendPlayer *player.Player, debug bool) (net.Conn, *bufio.Reader, *player.Player, bool) {

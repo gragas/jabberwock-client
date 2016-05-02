@@ -8,6 +8,7 @@ import (
 	"github.com/gragas/go-sdl2/sdl"
 	"github.com/gragas/jabberwock-client/utils"
 	"github.com/gragas/jabberwock-lib/entity"
+	"github.com/gragas/jabberwock-lib/inventory"
 	"github.com/gragas/jabberwock-lib/player"
 	"github.com/gragas/jabberwock-lib/protocol"
 	"github.com/gragas/jabberwock-lib/textures"
@@ -22,6 +23,7 @@ var reader *bufio.Reader
 var receiverToHandler chan string
 var clientPlayer *player.Player
 var clientPlayerView *player.PlayerView
+var clientPlayerInventoryView *inventory.InventoryView
 var entities map[uint64]entity.Entity
 var players map[uint64]*player.Player
 var jsonPlayers map[string]*player.Player // marshalled players
@@ -63,6 +65,8 @@ func Init(ip string, port int, initialized chan bool, quiet bool, debug bool, se
 	/* setup a player view */
 	clientPlayerView = clientPlayer.NewDefaultPlayerView(utils.Renderer)
 	playerViews[clientPlayer.GetID()] = clientPlayerView
+	// and the inventory view
+	clientPlayerInventoryView = clientPlayer.GetInventory().NewDefaultInventoryView(utils.Renderer)
 	/***********************/
 
 	utils.Loop = utils.LoopFuncs{pollEvents, draw}
@@ -207,7 +211,7 @@ func update(msg string, debug bool) {
 	flag[0] = false
 }
 
-func draw(dest *sdl.Surface) {
+func draw() {
 	// Peterson's Solution
 	flag[1] = true
 	turn = 0
@@ -218,8 +222,9 @@ func draw(dest *sdl.Surface) {
 	err = utils.Renderer.SetDrawColor(0xFF, 0xFF, 0xFF, 0xFF)
 	utils.Renderer.Clear()
 	for _, pv := range playerViews {
-		pv.Draw(utils.Renderer, dest, time.Duration(utils.Delta))
+		pv.Draw(utils.Renderer, time.Duration(utils.Delta))
 	}
+	clientPlayerInventoryView.Draw(utils.Renderer)
 
 	flag[1] = false
 }
